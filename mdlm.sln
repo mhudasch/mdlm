@@ -7,21 +7,30 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{253E81AD-A75
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Verticular.DownloadManager", "src\Verticular.DownloadManager\Verticular.DownloadManager.csproj", "{5AF75B77-A7E3-46CA-8D5D-A4A0652F8486}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Verticular.DownloadManager.Cli", "src\Verticular.DownloadManager.Cli\Verticular.DownloadManager.Cli.csproj", "{BC928124-E71D-434E-A087-5C3E8FE9B34B}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".sln", ".sln", "{3E13778F-DFE8-23A5-3B5D-C21CECD86E62}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
-	EndGlobalSection
-	GlobalSection(SolutionProperties) = preSolution
-		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{5AF75B77-A7E3-46CA-8D5D-A4A0652F8486}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{5AF75B77-A7E3-46CA-8D5D-A4A0652F8486}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5AF75B77-A7E3-46CA-8D5D-A4A0652F8486}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5AF75B77-A7E3-46CA-8D5D-A4A0652F8486}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BC928124-E71D-434E-A087-5C3E8FE9B34B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BC928124-E71D-434E-A087-5C3E8FE9B34B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BC928124-E71D-434E-A087-5C3E8FE9B34B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BC928124-E71D-434E-A087-5C3E8FE9B34B}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{5AF75B77-A7E3-46CA-8D5D-A4A0652F8486} = {253E81AD-A750-408E-9BA4-128B4964CF89}
+		{BC928124-E71D-434E-A087-5C3E8FE9B34B} = {253E81AD-A750-408E-9BA4-128B4964CF89}
 	EndGlobalSection
 EndGlobal
