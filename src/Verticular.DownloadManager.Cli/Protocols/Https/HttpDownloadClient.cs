@@ -1,21 +1,37 @@
 namespace Verticular.DownloadManager.Cli;
 
 using System.Runtime.InteropServices;
-using System.Security.AccessControl;
 using System.Security.Cryptography.X509Certificates;
+using System.Text.RegularExpressions;
 
-public sealed class HttpsDownloadClient : IDownloadClient
+public sealed class HttpDownloadClient : IDownloadClient
 {
-  private readonly TransportLayerSecurity configuration;
+  private readonly TransportLayerSecurity tlsConfig;
+  private readonly Version protocolVersion;
 
-  public HttpsDownloadClient(TransportLayerSecurity configuration)
+  public HttpDownloadClient(string? protocolVersion, TransportLayerSecurity configuration)
   {
-    this.configuration = configuration;
+    this.tlsConfig = configuration;
+    this.protocolVersion = ParseProtocolVersion(protocolVersion);
+  }
+
+  private static Version ParseProtocolVersion(string? protocolVersion)
+  {
+    if (protocolVersion is not null)
+    {
+      protocolVersion = Regex.Replace(protocolVersion, @"^https?/?", string.Empty, RegexOptions.IgnoreCase | RegexOptions.Compiled, TimeSpan.FromSeconds(1));
+    }
+    return protocolVersion?.ToLower() switch
+    {
+      "1.0" => new Version(1, 0),
+      "1.1" => new Version(1, 1),
+      "2.0" => new Version(2, 0),
+      "3.0" => new Version(3, 0),
+      _ => new Version(1, 1) // Default to HTTP/1.1
+    };
   }
 
   public async Task<DownloadPreflightResult> Preflight(Uri uri,
-    TransportSecurityConfiguration transportSecurityConfiguration,
-    AccessSecurityConfiguration accessSecurityConfiguration,
     CancellationToken cancellationToken = default)
   {
     using var httpsClient = this.CreateHttpClient();
@@ -32,7 +48,7 @@ public sealed class HttpsDownloadClient : IDownloadClient
     var supportsSegmentedDownloads = response.Headers.AcceptRanges.Any(ar => "bytes".Equals(ar, StringComparison.InvariantCultureIgnoreCase));
     var needsAuthentication = response.Headers.WwwAuthenticate.Count != 0;
     var contentLength = response.Content.Headers.ContentLength;
-    
+
     return new DownloadPreflightResult
     {
       SupportsSegmentedDownloads = supportsSegmentedDownloads,
@@ -51,17 +67,19 @@ public sealed class HttpsDownloadClient : IDownloadClient
   {
     var handler = new HttpClientHandler();
 
-    // Handle SSL verification skip
-    if (this.configuration.SkipSSLVerify)
+    handler.SslProtocols = this.tlsConfig.MinVersion;
+    Console.WriteLine($"✅ Minimum TLS version set to: {this.tlsConfig.MinVersion}");
+
+    if (this.tlsConfig.SkipSslVerify)
     {
       handler.ServerCertificateCustomValidationCallback =
           (sender, certificate, chain, sslPolicyErrors) => true;
       Console.WriteLine("⚠️  SSL certificate verification disabled");
     }
-    else if (!string.IsNullOrEmpty(this.configuration.CAFile) || !string.IsNullOrEmpty(this.configuration.CADirectory))
+    else if (!string.IsNullOrEmpty(this.tlsConfig.CAFile) || !string.IsNullOrEmpty(this.tlsConfig.CADirectory))
     {
       // Handle custom CA configuration
-      var customCerts = LoadCustomCAs(this.configuration.CAFile, this.configuration.CADirectory);
+      var customCerts = LoadCustomCAs(this.tlsConfig.CAFile, this.tlsConfig.CADirectory);
       if (customCerts.Count > 0)
       {
         handler.ServerCertificateCustomValidationCallback = (sender, certificate, chain, sslPolicyErrors) =>
@@ -76,7 +94,7 @@ public sealed class HttpsDownloadClient : IDownloadClient
         Console.WriteLine("✅ Custom CA certificates loaded");
       }
     }
-    else if (this.configuration.UseNativeCA)
+    else if (this.tlsConfig.UseNativeCA)
     {
       // Handle native CA store
       if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -100,6 +118,8 @@ public sealed class HttpsDownloadClient : IDownloadClient
     }
 
     var httpClient = new HttpClient(handler);
+    httpClient.DefaultRequestVersion = this.protocolVersion;
+    Console.WriteLine($"✅ HTTP version set to: {this.protocolVersion}");
     return httpClient;
   }
 

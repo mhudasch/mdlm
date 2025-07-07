@@ -1,10 +1,12 @@
 namespace Verticular.DownloadManager.Cli;
 
+using System;
 using System.Runtime.InteropServices;
+using System.Security.Authentication;
 
 public sealed class TransportLayerSecurity
 {
-  public TransportLayerSecurity(TransportSecurityConfiguration configuration)
+  public TransportLayerSecurity(TransportSecurityOptions configuration)
   {
     this.TryToLocateCASources();
     if (!string.IsNullOrWhiteSpace(configuration.CADirectory))
@@ -15,8 +17,33 @@ public sealed class TransportLayerSecurity
     {
       this.CAFile = configuration.CAFile;
     }
-    this.SkipSSLVerify = configuration.SkipSSLVerify;
+    this.SkipSslVerify = configuration.NoServerCertificateValidation;
     this.UseNativeCA = configuration.UseNativeCA;
+    this.MinVersion = GetSslProtocols(ParseTlsVersion(configuration.MinVersion));
+  }
+
+  private static SslProtocols ParseTlsVersion(string? tlsVersion)
+  {
+    return tlsVersion?.ToLower() switch
+    {
+      "1.0" => SslProtocols.Tls,
+      "1.1" => SslProtocols.Tls11,
+      "1.2" => SslProtocols.Tls12,
+      "1.3" => SslProtocols.Tls13,
+      _ => SslProtocols.Tls12 // Default to TLS 1.2
+    };
+  }
+
+  private static SslProtocols GetSslProtocols(SslProtocols minVersion)
+  {
+    return minVersion switch
+    {
+      SslProtocols.Tls => SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12 | SslProtocols.Tls13,
+      SslProtocols.Tls11 => SslProtocols.Tls11 | SslProtocols.Tls12 | SslProtocols.Tls13,
+      SslProtocols.Tls12 => SslProtocols.Tls12 | SslProtocols.Tls13,
+      SslProtocols.Tls13 => SslProtocols.Tls13,
+      _ => SslProtocols.Tls12 | SslProtocols.Tls13
+    };
   }
 
   private void TryToLocateCASources()
@@ -39,7 +66,9 @@ public sealed class TransportLayerSecurity
 
     }
   }
-  public bool SkipSSLVerify { get; init; } = false;
+
+  public SslProtocols MinVersion { get; init; } = SslProtocols.Tls12 | SslProtocols.Tls13;
+  public bool SkipSslVerify { get; init; } = false;
   public string? CAFile { get; internal set; }
   public string? CADirectory { get; internal set; }
   public bool UseNativeCA { get; init; } = true;

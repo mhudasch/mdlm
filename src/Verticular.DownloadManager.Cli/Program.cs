@@ -11,8 +11,12 @@ var uri = "https://raw.githubusercontent.com/mhudasch/Verticular.Extensions.Rand
 var cmd = new BeginDownloadCommand
 {
   Uri = new Uri(uri),
-  TransportSecurityConfiguration = new(),
-  AccessSecurityConfiguration = new()
+  RequestOptions = new()
+  {
+    TransportSecurityOptions = new(),
+    AccessSecurityOptions = new(),
+    ProtocolVersion = null
+  }
 };
 var proc = new DownloadCommandProcessor();
 await proc.RunAsync([cmd]);

@@ -3,8 +3,6 @@ namespace Verticular.DownloadManager.Cli;
 public interface IDownloadClient : IDisposable, IAsyncDisposable
 {
   Task<DownloadPreflightResult> Preflight(Uri uri,
-    TransportSecurityConfiguration transportSecurityConfiguration,
-    AccessSecurityConfiguration accessSecurityConfiguration,
 
     CancellationToken cancellationToken = default);
 

@@ -3,15 +3,13 @@ using Verticular.DownloadManager.Cli;
 public class BeginDownloadCommand : IDownloadCommand
 {
   public required Uri Uri { get; init; }
-  public required TransportSecurityConfiguration TransportSecurityConfiguration { get; init; }
-  public required AccessSecurityConfiguration AccessSecurityConfiguration { get; init; }
-
+  public required DownloadRequestOptions RequestOptions { get; init; }
   public async Task<IDownloadCommandResult> Handle(CancellationToken cancellationToken)
   {
     var commandId = Guid.NewGuid().ToString("N");
     var clientFactory = new DefaultDownloadClientFactory(); // from outside
-    var downloadClient = await clientFactory.CreateClient(this.Uri, this.TransportSecurityConfiguration, this.AccessSecurityConfiguration, cancellationToken);
-    var preflightResult = await downloadClient.Preflight(this.Uri, this.TransportSecurityConfiguration, this.AccessSecurityConfiguration, cancellationToken);
+    var downloadClient = await clientFactory.CreateClient(this.Uri, this.RequestOptions, cancellationToken);
+    var preflightResult = await downloadClient.Preflight(this.Uri, cancellationToken);
 
     // extract client from uri scheme
     // execute preflight
@@ -21,6 +19,14 @@ public class BeginDownloadCommand : IDownloadCommand
       State = DownloadCommandState.Ended
     };
   }
+}
+
+public class DownloadRequestOptions
+{
+  public required string? ProtocolVersion { get; init; }
+  public required TransportSecurityOptions TransportSecurityOptions { get; init; }
+  public required AccessSecurityOptions AccessSecurityOptions { get; init; }
+
 }
 
 public class BeginDownloadCommandResult : IDownloadCommandResult
