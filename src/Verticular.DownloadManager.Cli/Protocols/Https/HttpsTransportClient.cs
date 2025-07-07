@@ -1,24 +1,51 @@
 namespace Verticular.DownloadManager.Cli;
 
 using System.Runtime.InteropServices;
+using System.Security.AccessControl;
 using System.Security.Cryptography.X509Certificates;
 
-public sealed class HttpsTransportClient : ITransportClient
+public sealed class HttpsDownloadClient : IDownloadClient
 {
-  private readonly HttpsTransportClientConfiguration configuration;
-  private readonly HttpClient client;
+  private readonly TransportLayerSecurity configuration;
 
-  public HttpsTransportClient(HttpsTransportClientConfiguration configuration)
+  public HttpsDownloadClient(TransportLayerSecurity configuration)
   {
     this.configuration = configuration;
-    this.client = this.CreateHttpClient();
   }
 
-  public async Task Download(string uri, CancellationToken cancellationToken = default)
+  public async Task<DownloadPreflightResult> Preflight(Uri uri,
+    TransportSecurityConfiguration transportSecurityConfiguration,
+    AccessSecurityConfiguration accessSecurityConfiguration,
+    CancellationToken cancellationToken = default)
   {
-    // todo: later return the stream here or raise events for download state changes
-    await this.client.GetAsync(uri, cancellationToken);
+    using var httpsClient = this.CreateHttpClient();
+    // pre-flight in https means do a OPTIONS request
+    var optionsRequest = new HttpRequestMessage(HttpMethod.Options, uri);
+    var response = await httpsClient.SendAsync(optionsRequest, cancellationToken);
+    if (!response.IsSuccessStatusCode && response.StatusCode is System.Net.HttpStatusCode.Unauthorized or System.Net.HttpStatusCode.Forbidden)
+    {
+      // request again but with HEAD request
+      var headRequest = new HttpRequestMessage(HttpMethod.Head, uri);
+      response = await httpsClient.SendAsync(headRequest, cancellationToken);
+    }
+    response.EnsureSuccessStatusCode();
+    var supportsSegmentedDownloads = response.Headers.AcceptRanges.Any(ar => "bytes".Equals(ar, StringComparison.InvariantCultureIgnoreCase));
+    var needsAuthentication = response.Headers.WwwAuthenticate.Count != 0;
+    var contentLength = response.Content.Headers.ContentLength;
+    
+    return new DownloadPreflightResult
+    {
+      SupportsSegmentedDownloads = supportsSegmentedDownloads,
+      NeedsAuthentication = needsAuthentication,
+      TotalDownloadSize = contentLength
+    };
   }
+
+  // public async Task Download(string uri, CancellationToken cancellationToken = default)
+  // {
+  //   // todo: later return the stream here or raise events for download state changes
+  //   await this.client.GetAsync(uri, cancellationToken);
+  // }
 
   private HttpClient CreateHttpClient()
   {
@@ -181,12 +208,11 @@ public sealed class HttpsTransportClient : ITransportClient
 
   public ValueTask DisposeAsync()
   {
-    this.Dispose();
     return ValueTask.CompletedTask;
   }
 
   public void Dispose()
   {
-    this.client?.Dispose();
+    // nothing to do here
   }
 }

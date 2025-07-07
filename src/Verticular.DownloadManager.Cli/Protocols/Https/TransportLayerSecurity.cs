@@ -2,11 +2,21 @@ namespace Verticular.DownloadManager.Cli;
 
 using System.Runtime.InteropServices;
 
-public sealed class HttpsTransportClientConfiguration : TransportClientConfiguration
+public sealed class TransportLayerSecurity
 {
-  public HttpsTransportClientConfiguration()
+  public TransportLayerSecurity(TransportSecurityConfiguration configuration)
   {
     this.TryToLocateCASources();
+    if (!string.IsNullOrWhiteSpace(configuration.CADirectory))
+    {
+      this.CADirectory = configuration.CADirectory;
+    }
+    if (!string.IsNullOrWhiteSpace(configuration.CAFile))
+    {
+      this.CAFile = configuration.CAFile;
+    }
+    this.SkipSSLVerify = configuration.SkipSSLVerify;
+    this.UseNativeCA = configuration.UseNativeCA;
   }
 
   private void TryToLocateCASources()
@@ -29,8 +39,6 @@ public sealed class HttpsTransportClientConfiguration : TransportClientConfigura
 
     }
   }
-
-  // TODO: wrap in own config
   public bool SkipSSLVerify { get; init; } = false;
   public string? CAFile { get; internal set; }
   public string? CADirectory { get; internal set; }
